@@ -1,0 +1,186 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Bar, Line } from "react-chartjs-2"; // Using only necessary chart types
+import "chart.js/auto";
+
+const ChartComponent = ({ apiUrl, chartType, params }) => {
+  const [chartData, setChartData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await axios.get(apiUrl, { params });
+        setChartData(response.data);
+      } catch (err) {
+        setError("Failed to fetch chart data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChartData();
+  }, [apiUrl, params]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-danger">{error}</div>;
+  if (!chartData) return <div>No data available.</div>;
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: "top",
+      },
+    },
+  };
+
+  let dataConfig;
+  if (chartType === "bar") {
+    dataConfig = {
+      labels: chartData.map((item) => item.company),
+      datasets: [
+        {
+          label: "Online Rounds",
+          data: chartData.map((item) => item.no_of_online_rounds || 0),
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+        },
+        {
+          label: "Offline Rounds",
+          data: chartData.map((item) => item.no_of_offline_rounds || 0),
+          backgroundColor: "rgba(153, 102, 255, 0.6)",
+        },
+      ],
+    };
+  } else if (chartType === "line") {
+    dataConfig = {
+      labels: chartData.map((item) => item.company),
+      datasets: [
+        {
+          label: "Total Students Hired",
+          data: chartData.map((item) => item.no_of_students_hired || 0),
+          borderColor: "rgba(75, 192, 192, 1)",
+          backgroundColor: "rgba(75, 192, 192, 0.2)",
+          fill: true,
+        },
+      ],
+    };
+  }
+
+  return (
+    <div className="mt-3">
+      {chartType === "bar" && <Bar data={dataConfig} options={options} />}
+      {chartType === "line" && <Line data={dataConfig} options={options} />}
+    </div>
+  );
+};
+
+const DataViz = () => {
+  const [selectedChart, setSelectedChart] = useState({
+    apiUrl: "/api/rounds/online-vs-offline",
+    chartType: "bar",
+    requiresInput: false,
+  });
+  const [inputValue, setInputValue] = useState("");
+  const [params, setParams] = useState({});
+
+  const chartOptions = [
+    {
+      name: "Online vs Offline Rounds",
+      apiUrl: "/api/rounds/online-vs-offline",
+      chartType: "bar",
+      requiresInput: false,
+    },
+    {
+      name: "Total Students Hired",
+      apiUrl: "/api/rounds/total-hired-trend",
+      chartType: "line",
+      requiresInput: false,
+    },
+    {
+      name: "Round Type Count by Company",
+      apiUrl: "/api/rounds/round-type-count",
+      chartType: "bar",
+      requiresInput: true,
+      inputPlaceholder: "Enter Company Name",
+    },
+  ];
+
+  const handleFetchData = () => {
+    setParams({ company: inputValue });
+  };
+
+  return (
+    <div className="container-fluid mt-5">
+      <div className="row">
+        {/* Sidebar */}
+        <div className="col-md-3">
+          <div className="bg-light p-3 rounded shadow">
+            <h4 className="text-primary fw-bold mb-3">Charts</h4>
+            <ul className="list-group">
+              {chartOptions.map((option, index) => (
+                <li key={index} className="list-group-item">
+                  <button
+                    className="btn btn-outline-primary w-100"
+                    onClick={() => {
+                      setSelectedChart(option);
+                      setInputValue(""); // Reset input when switching
+                      setParams({});
+                    }}
+                  >
+                    {option.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Main Chart Area */}
+        <div className="col-md-9">
+          <div className="p-3 rounded shadow bg-white">
+            <h3 className="text-primary fw-bold mb-3">Visualization</h3>
+
+            {/* Input for APIs requiring parameters */}
+            {selectedChart.requiresInput && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder={selectedChart.inputPlaceholder}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                />
+                <button
+                  className="btn btn-primary mt-2"
+                  onClick={handleFetchData}
+                >
+                  Fetch Data
+                </button>
+              </div>
+            )}
+
+            {/* Chart Display */}
+            <ChartComponent
+              apiUrl={selectedChart.apiUrl}
+              chartType={selectedChart.chartType}
+              params={params}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-5 text-center text-muted">
+        <p>AI Placement Assistant - 2025 | All Rights Reserved</p>
+      </footer>
+    </div>
+  );
+};
+
+export default DataViz;

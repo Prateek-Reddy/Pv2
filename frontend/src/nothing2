@@ -1,0 +1,137 @@
+// API for Bar Chart: Number of online vs. offline rounds for each company
+// API to get online vs offline rounds data (filtering out null values)
+app.get("/api/rounds/online-vs-offline", async (req, res) => {
+    try {
+      const data = await RoundsandGenderWise.find({}, { company: 1, no_of_online_rounds: 1, no_of_offline_rounds: 1 });
+  
+      // Filter out records where either online or offline rounds data is missing
+      const filteredData = data.filter(
+        (item) => item.no_of_online_rounds !== null && item.no_of_offline_rounds !== null
+      );
+  
+      res.status(200).json(filteredData);
+    } catch (error) {
+      console.error("Error fetching online vs offline rounds:", error);
+      res.status(500).json({ error: "Failed to fetch data" });
+    }
+  });
+  
+  app.get("/api/rounds/gender-distribution", async (req, res) => {
+    try {
+      const { company } = req.query;
+  
+      if (!company) {
+        return res.status(400).json({ message: "Company name is required as a query parameter." });
+      }
+  
+      const data = await RoundsandGenderWise.findOne({ company });
+  
+      if (!data) {
+        return res.status(404).json({ message: "No data found for the specified company." });
+      }
+  
+      res.status(200).json({
+        no_of_male_students: data.no_of_male_students || 0,
+        no_of_female_students: data.no_of_female_students || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching gender distribution:", error.message);
+      res.status(500).json({ message: "Failed to fetch data.", error: error.message });
+    }
+  });
+
+  app.get("/api/rounds/gender-wise-hiring", async (req, res) => {
+    try {
+      const data = await RoundsandGenderWise.find({}, { company: 1, no_of_male_students: 1, no_of_female_students: 1 });
+  
+      const genderWiseData = data.map((item) => ({
+        company: item.company,
+        no_of_male_students: item.no_of_male_students || 0,
+        no_of_female_students: item.no_of_female_students || 0,
+      }));
+  
+      res.status(200).json(genderWiseData);
+    } catch (error) {
+      console.error("Error fetching gender-wise hiring count:", error.message);
+      res.status(500).json({ message: "Failed to fetch data.", error: error.message });
+    }
+  });
+
+  app.get("/api/rounds/total-hired-trend", async (req, res) => {
+    try {
+      const data = await RoundsandGenderWise.find({}, { company: 1, no_of_students_hired: 1 });
+  
+      const trendData = data.map((item) => ({
+        company: item.company,
+        no_of_students_hired: item.no_of_students_hired || 0,
+      }));
+  
+      res.status(200).json(trendData);
+    } catch (error) {
+      console.error("Error fetching total students hired trend:", error.message);
+      res.status(500).json({ message: "Failed to fetch data.", error: error.message });
+    }
+  });
+
+  app.get("/api/rounds/round-type-count", async (req, res) => {
+    try {
+      const data = await TypeofRounds.find({}, { company: 1, aptitude_round: 1, technical_round: 1, managerial_round: 1 });
+  
+      const roundTypeData = data.map((item) => ({
+        company: item.company,
+        aptitude_round: item.aptitude_round || 0,
+        technical_round: item.technical_round || 0,
+        managerial_round: item.managerial_round || 0,
+      }));
+  
+      res.status(200).json(roundTypeData);
+    } catch (error) {
+      console.error("Error fetching round type count:", error.message);
+      res.status(500).json({ message: "Failed to fetch data.", error: error.message });
+    }
+  });
+
+  app.get("/api/rounds/combined-round-types", async (req, res) => {
+    try {
+      const data = await TypeofRounds.find(
+        {},
+        { company: 1, technical_hr: 1, group_discussion: 1, online_coding: 1 }
+      );
+  
+      const combinedRoundData = data.map((item) => ({
+        company: item.company,
+        technical_hr: item.technical_hr || 0,
+        group_discussion: item.group_discussion || 0,
+        online_coding: item.online_coding || 0,
+      }));
+  
+      res.status(200).json(combinedRoundData);
+    } catch (error) {
+      console.error("Error fetching combined round types:", error.message);
+      res.status(500).json({ message: "Failed to fetch data.", error: error.message });
+    }
+  });
+
+  app.get("/api/rounds/heatmap", async (req, res) => {
+    try {
+      const data = await TypeofRounds.find(
+        {},
+        {
+          company: 1,
+          aptitude_round: 1,
+          technical_round: 1,
+          managerial_round: 1,
+          technical_hr: 1,
+          group_discussion: 1,
+          online_coding: 1,
+          written_coding_round: 1,
+        }
+      );
+  
+      res.status(200).json(data);
+    } catch (error) {
+      console.error("Error fetching heatmap data:", error.message);
+      res.status(500).json({ message: "Failed to fetch data.", error: error.message });
+    }
+  });
+  
